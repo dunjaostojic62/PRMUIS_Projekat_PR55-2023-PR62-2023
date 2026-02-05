@@ -35,7 +35,13 @@ public class Reservation
 
     public bool IsValidAt(DateTime time)
     {
-        return IsActive && time >= From && time <= To;
+        if (!IsActive)
+            return false;
+
+        if (time < From || time > To)
+            return false;
+
+        return true;
     }
 
     public void Cancel()

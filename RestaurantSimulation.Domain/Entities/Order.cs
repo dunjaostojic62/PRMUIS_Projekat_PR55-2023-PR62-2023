@@ -37,12 +37,22 @@ public class Order
 
     public bool HasFood()
     {
-        return Items.Any(i => i.Type == ItemType.Food);
+        foreach (var item in Items)
+        {
+            if (item.Type == ItemType.Food)
+                return true;
+        }
+        return false;
     }
 
     public bool HasDrink()
     {
-        return Items.Any(i => i.Type == ItemType.Drink);
+        foreach (var item in Items)
+        {
+            if (item.Type == ItemType.Drink)
+                return true;
+        }
+        return false;
     }
 }
 

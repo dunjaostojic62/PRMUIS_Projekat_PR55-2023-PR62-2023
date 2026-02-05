@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RestaurantSimulation.Application.DTO;
 
 using RestaurantSimulation.Domain.Entities;
 
@@ -34,5 +35,9 @@ public interface IRestaurantServer
     IReadOnlyList<Table> GetTables();
     IReadOnlyList<Reservation> GetReservations();
     IReadOnlyList<Order> GetOrders();
+
+    Reservation CreateReservation(CreateReservationRequest req);
+    Order PlaceOrder(PlaceOrderRequest req);
+    Bill Pay(PayRequest req);
 }
 

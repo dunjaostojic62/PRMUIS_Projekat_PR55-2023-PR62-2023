@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using RestaurantSimulation.Application.Interfaces;
 using RestaurantSimulation.Domain.Entities;
 using RestaurantSimulation.Domain.Enums;
+using RestaurantSimulation.Application.DTO;
 
 namespace RestaurantSimulation.Application.Services;
 
@@ -18,12 +19,12 @@ public class RestaurantServer : IRestaurantServer
     private readonly List<Order> _orders = new();
 
     // Redovi za kuhinju i bar (FIFO)
-    private readonly Queue<int> _kitchenQueue = new(); // čuvamo orderId
-    private readonly Queue<int> _barQueue = new();
+    private readonly List<int> _kitchenQueue = new(); // čuvamo orderId
+    private readonly List<int> _barQueue = new();
 
     // “Ready” flagovi
-    private readonly HashSet<int> _foodReady = new();
-    private readonly HashSet<int> _drinkReady = new();
+    private readonly List<int> _foodReady = new();
+    private readonly List<int> _drinkReady = new();
 
     private int _nextReservationId = 1;
     private int _nextOrderId = 1;
@@ -109,8 +110,8 @@ public class RestaurantServer : IRestaurantServer
         _orders.Add(order);
 
         // raspodela: hrana u kitchenQueue, piće u barQueue
-        if (order.HasFood()) _kitchenQueue.Enqueue(order.Id);
-        if (order.HasDrink()) _barQueue.Enqueue(order.Id);
+        if (order.HasFood()) _kitchenQueue.Add(order.Id);
+        if (order.HasDrink()) _barQueue.Add(order.Id);
 
         return order;
     }
@@ -120,27 +121,31 @@ public class RestaurantServer : IRestaurantServer
         // Za sad: samo “izvadi iz reda i kreni pripremu”
         if (_kitchenQueue.Count > 0)
         {
-            int orderId = _kitchenQueue.Dequeue();
+            int orderId = _kitchenQueue[0];
+            _kitchenQueue.RemoveAt(0);
             // ovde bi kuvar “preuzeo”
             SetOrderStatus(orderId, OrderStatus.InPreparation);
         }
 
         if (_barQueue.Count > 0)
         {
-            int orderId = _barQueue.Dequeue();
+            int orderId = _barQueue[0];
+            _barQueue.RemoveAt(0);
             SetOrderStatus(orderId, OrderStatus.InPreparation);
         }
     }
 
     public void MarkFoodReady(int orderId)
     {
-        _foodReady.Add(orderId);
+        if (!_foodReady.Contains(orderId))
+            _foodReady.Add(orderId);
         TryMarkOrderReady(orderId);
     }
 
     public void MarkDrinkReady(int orderId)
     {
-        _drinkReady.Add(orderId);
+        if (!_drinkReady.Contains(orderId))
+            _drinkReady.Add(orderId);
         TryMarkOrderReady(orderId);
     }
 
@@ -161,12 +166,25 @@ public class RestaurantServer : IRestaurantServer
     // ------- pomoćne metode -------
 
     private Table FindTable(int tableId)
-        => _tables.FirstOrDefault(t => t.Id == tableId)
-           ?? throw new InvalidOperationException("Sto ne postoji.");
+{
+    var table = _tables.FirstOrDefault(t => t.Id == tableId);
 
-    private Order FindOrder(int orderId)
-        => _orders.FirstOrDefault(o => o.Id == orderId)
-           ?? throw new InvalidOperationException("Porudzbina ne postoji.");
+    if (table == null)
+        throw new InvalidOperationException("Sto ne postoji.");
+
+    return table;
+}
+
+private Order FindOrder(int orderId)
+{
+    var order = _orders.FirstOrDefault(o => o.Id == orderId);
+
+    if (order == null)
+        throw new InvalidOperationException("Porudzbina ne postoji.");
+
+    return order;
+}
+
 
     private void SetOrderStatus(int orderId, OrderStatus status)
     {
@@ -193,5 +211,21 @@ public class RestaurantServer : IRestaurantServer
     public IReadOnlyList<Table> GetTables() => _tables;
     public IReadOnlyList<Reservation> GetReservations() => _reservations;
     public IReadOnlyList<Order> GetOrders() => _orders;
+
+    public Reservation CreateReservation(CreateReservationRequest req)
+    => CreateReservation(req.TableId, req.GuestName, req.GuestCount, req.From, req.To);
+
+    public Order PlaceOrder(PlaceOrderRequest req)
+    {
+        var items = req.Items
+            .Select(i => new OrderItem(i.Name, i.Quantity, i.UnitPrice, i.Type))
+            .ToList();
+
+        return PlaceOrder(req.TableId, items);
+    }
+
+    public Bill Pay(PayRequest req)
+        => Pay(req.OrderId, req.PaidAmount);
+
 }
 

@@ -25,7 +25,13 @@ public class Table
 
     public bool CanSeat(int guests)
     {
-        return Status == TableStatus.Free && guests <= Capacity;
+        if (Status != TableStatus.Free)
+            return false;
+
+        if (guests > Capacity)
+            return false;
+
+        return true;
     }
 
     public void Occupy(int guests)
