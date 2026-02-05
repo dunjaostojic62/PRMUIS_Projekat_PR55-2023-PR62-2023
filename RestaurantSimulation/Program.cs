@@ -17,6 +17,9 @@ while (true)
     Console.WriteLine("3) Dispatch rada (server -> kuhinja/bar)");
     Console.WriteLine("4) Oznaci spremno (kuvar/barmen)");
     Console.WriteLine("5) Plati racun (konobar)");
+    Console.WriteLine("6) Prikazi stanje (server)");
+    Console.WriteLine("7) Kreiraj rezervaciju (menadzer)");
+    Console.WriteLine("8) Otkazi rezervaciju (menadzer)");
     Console.WriteLine("0) Izlaz");
     Console.Write("Izbor: ");
 
@@ -110,6 +113,59 @@ while (true)
             Console.WriteLine($"PLACENO: {bill.PaidAmount}");
             Console.WriteLine($"KUSUR: {bill.Change}");
             Console.WriteLine("OK: Porudzbina je placena.");
+        }
+        else if (choice == "6")
+        {
+            Console.WriteLine("=== STOLOVI ===");
+            foreach (var t in server.GetTables())
+            {
+                Console.WriteLine($"Sto {t.Id} | Kapacitet: {t.Capacity} | Gosti: {t.CurrentGuests} | Status: {t.Status}");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("=== REZERVACIJE ===");
+            foreach (var r in server.GetReservations())
+            {
+                Console.WriteLine($"Rez {r.Id} | Sto: {r.TableId} | {r.GuestName} | {r.GuestCount} | {r.From:g}-{r.To:g} | Active: {r.IsActive}");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("=== PORUDZBINE ===");
+            foreach (var o in server.GetOrders())
+            {
+                Console.WriteLine($"Order {o.Id} | Sto: {o.TableId} | Status: {o.Status} | Iznos: {o.TotalAmount()}");
+            }
+        }
+        else if (choice == "7")
+        {
+            Console.Write("TableId (1-3): ");
+            int tableId = int.Parse(Console.ReadLine()!);
+
+            Console.Write("Ime gosta: ");
+            string guest = Console.ReadLine()!;
+
+            Console.Write("Broj gostiju: ");
+            int guestCount = int.Parse(Console.ReadLine()!);
+
+            Console.Write("Od (minute od sada, npr 0): ");
+            int fromMin = int.Parse(Console.ReadLine()!);
+
+            Console.Write("Do (minute od sada, npr 60): ");
+            int toMin = int.Parse(Console.ReadLine()!);
+
+            DateTime from = DateTime.Now.AddMinutes(fromMin);
+            DateTime to = DateTime.Now.AddMinutes(toMin);
+
+            var r = server.CreateReservation(tableId, guest, guestCount, from, to);
+            Console.WriteLine($"OK: Rezervacija kreirana. Id = {r.Id}");
+        }
+        else if (choice == "8")
+        {
+            Console.Write("Unesi ReservationId: ");
+            int reservationId = int.Parse(Console.ReadLine()!);
+
+            server.CancelReservation(reservationId);
+            Console.WriteLine("OK: Rezervacija otkazana.");
         }
         else
         {

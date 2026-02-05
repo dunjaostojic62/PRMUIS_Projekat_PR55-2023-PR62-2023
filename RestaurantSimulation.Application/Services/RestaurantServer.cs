@@ -72,9 +72,22 @@ public class RestaurantServer : IRestaurantServer
         if (guestCount > table.Capacity)
             throw new InvalidOperationException("Previse gostiju za ovaj sto.");
 
-        // dozvoljavamo zauzimanje i ako je Reserved (gost je došao)
+        // Provera da li postoji AKTIVNA rezervacija za ovaj sto u ovom trenutku
+        var now = DateTime.Now;
+        var hasValidReservation = _reservations.Any(r =>
+            r.TableId == tableId &&
+            r.IsActive &&
+            r.GuestCount == guestCount &&
+            r.IsValidAt(now)
+        );
+
+        // Ako je sto rezervisan, dozvoli check-in samo uz validnu rezervaciju
+        if (table.Status == TableStatus.Reserved && !hasValidReservation)
+            throw new InvalidOperationException("Sto je rezervisan - nema validne rezervacije.");
+
         table.Occupy(guestCount);
     }
+
 
     public void FreeTable(int tableId)
     {
@@ -176,5 +189,9 @@ public class RestaurantServer : IRestaurantServer
             order.Status = OrderStatus.Ready;
         }
     }
+
+    public IReadOnlyList<Table> GetTables() => _tables;
+    public IReadOnlyList<Reservation> GetReservations() => _reservations;
+    public IReadOnlyList<Order> GetOrders() => _orders;
 }
 

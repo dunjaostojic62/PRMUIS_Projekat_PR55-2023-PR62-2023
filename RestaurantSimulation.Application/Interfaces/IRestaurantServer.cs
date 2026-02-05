@@ -30,5 +30,9 @@ public interface IRestaurantServer
 
     // Plaćanje (konobar)
     Bill Pay(int orderId, decimal paidAmount);
+
+    IReadOnlyList<Table> GetTables();
+    IReadOnlyList<Reservation> GetReservations();
+    IReadOnlyList<Order> GetOrders();
 }
 
