@@ -1,0 +1,43 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+using RestaurantSimulation.Domain.Enums;
+
+namespace RestaurantSimulation.Domain.Entities;
+
+public class Table
+{
+    public int Id { get; set; }
+    public int Capacity { get; set; }
+    public int CurrentGuests { get; set; }
+    public TableStatus Status { get; set; }
+
+    public Table(int id, int capacity)
+    {
+        Id = id;
+        Capacity = capacity;
+        CurrentGuests = 0;
+        Status = TableStatus.Free;
+    }
+
+    public bool CanSeat(int guests)
+    {
+        return Status == TableStatus.Free && guests <= Capacity;
+    }
+
+    public void Occupy(int guests)
+    {
+        CurrentGuests = guests;
+        Status = TableStatus.Occupied;
+    }
+
+    public void Free()
+    {
+        CurrentGuests = 0;
+        Status = TableStatus.Free;
+    }
+}
+
