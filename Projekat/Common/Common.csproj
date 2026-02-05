@@ -41,8 +41,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Contact.cs" />
+    <Compile Include="KategorijaEnum.cs" />
+    <Compile Include="Osoblje.cs" />
+    <Compile Include="Porudzbina.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StatusEnum.cs" />
+    <Compile Include="StatusPorudzbine.cs" />
+    <Compile Include="Sto.cs" />
+    <Compile Include="TipEnum.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

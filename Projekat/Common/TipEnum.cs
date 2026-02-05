@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Client
+namespace Common
 {
-    internal class Program
+    public enum TipEnum
     {
-        static void Main(string[] args)
-        {
-
-        }
+        KUVAR = 0,
+        BARMEN = 1,
+        KONOBAR = 2
     }
 }

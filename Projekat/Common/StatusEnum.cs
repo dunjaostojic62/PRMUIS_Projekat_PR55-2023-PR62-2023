@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Common
 {
-    [Serializable]
-    public class Contact
+    public enum  StatusEnum
     {
-        
+        SLOBODAN = 0,
+        ZAUZET = 1
     }
 }

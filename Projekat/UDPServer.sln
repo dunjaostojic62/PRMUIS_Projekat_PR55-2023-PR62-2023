@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.4.33122.133
+# Visual Studio Version 18
+VisualStudioVersion = 18.1.11312.151 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UDPServer", "UDPServer\UDPServer.csproj", "{7ED46C6D-FDD3-4FA6-A17E-FF586C0678D2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "UDPServer\Server.csproj", "{7ED46C6D-FDD3-4FA6-A17E-FF586C0678D2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{B02DEA3F-2E40-4005-B0A7-90F5EDA27A72}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UDPClient", "UDPClient\UDPClient.csproj", "{B0607C9D-A730-4407-A2C0-9EF3F9DEF0E7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "UDPClient\Client.csproj", "{B0607C9D-A730-4407-A2C0-9EF3F9DEF0E7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
