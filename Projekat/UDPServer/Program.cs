@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using Common;
-
+using System.Threading;
 
 namespace Server
 {
@@ -18,15 +18,29 @@ namespace Server
         private static List<string> listaPorudzbina = new List<string>();
         private static List<string> informacijeORresursima = new List<string>();
 
+        // ZADATAK 5 - red i stek + resursi
+        private static Queue<string> redPorudzbina = new Queue<string>();
+        private static Stack<string> stekPorudzbina = new Stack<string>();
+
+        private static Socket soketKonobar = null;
+        private static Socket soketKuvar = null;
+        private static Socket soketBarmen = null;
+
+        private static bool kuvarSlobodan = true;
+        private static bool barmenSlobodan = true;
+
+        private static object bravaZadatak5 = new object();
+
         static void Main(string[] args)
         {
             Console.WriteLine("1 - TCP");
             Console.WriteLine("2 - UDP");
+            Console.WriteLine("3 - TCP(Zadatak 5)");
             string izbor = Console.ReadLine();
 
             if (izbor == "2")
             {
-   
+
                 Socket recvSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
                 IPEndPoint recvEndPoint = new IPEndPoint(IPAddress.Any, 27015);
@@ -53,6 +67,11 @@ namespace Server
                 return;
             }
 
+            if (izbor == "3")
+            {
+                PokreniZadatak5();
+                return;
+            }
 
             // TCP SERVER
             Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -119,7 +138,7 @@ namespace Server
                 Porudzbina primljenaPorudzbina;
                 using (MemoryStream ms = new MemoryStream(tacniBajtoviPorudzbina))
                 {
-                    BinaryFormatter bf = new BinaryFormatter();  
+                    BinaryFormatter bf = new BinaryFormatter();
                     primljenaPorudzbina = (Porudzbina)bf.Deserialize(ms);
                 }
 
@@ -139,7 +158,7 @@ namespace Server
             byte[] bff = new byte[10];
             acceptedSocket.Receive(bff);
             signal = int.Parse(Encoding.UTF8.GetString(bff));
-            if(signal == 1)
+            if (signal == 1)
             {
                 // Racunanje ukupnog iznosa
                 double ukupno = 0;
@@ -178,7 +197,211 @@ namespace Server
 
                 Console.ReadKey();
             }
-            
         }
+        private static void PokreniZadatak5()
+        {
+            Console.WriteLine("=== ZADATAK 5 (TCP) ===");
+            Console.WriteLine("Cekam 3 konekcije: KONOBAR, KUVAR, BARMEN...");
+
+            Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            serverSocket.Bind(new IPEndPoint(IPAddress.Any, SERVER_PORT));
+            serverSocket.Listen(10);
+
+            // PRIHVATAMO 3 KONEKCIJE (blokirajuce)
+            Socket s1 = serverSocket.Accept();
+            DodeliUlogu(s1, PrimiString(s1));
+
+            Socket s2 = serverSocket.Accept();
+            DodeliUlogu(s2, PrimiString(s2));
+
+            Socket s3 = serverSocket.Accept();
+            DodeliUlogu(s3, PrimiString(s3));
+
+            Console.WriteLine("Sve uloge su prijavljene. Server radi red/stek.");
+
+            // niti za kuvara i barmena (da server prima SPREMNO)
+            Thread nitKuvar = new Thread(() => OsluskujResurs(soketKuvar, "KUVAR"));
+            nitKuvar.IsBackground = true;
+            nitKuvar.Start();
+
+            Thread nitBarmen = new Thread(() => OsluskujResurs(soketBarmen, "BARMEN"));
+            nitBarmen.IsBackground = true;
+            nitBarmen.Start();
+
+            // GLAVNA NIT: prima porudzbine od konobara
+            while (true)
+            {
+                string poruka = PrimiString(soketKonobar);
+                if (poruka == null) break;
+
+                if (poruka.StartsWith("PORUDZBINA|"))
+                {
+                    lock (bravaZadatak5)
+                    {
+                        redPorudzbina.Enqueue(poruka);
+                        Console.WriteLine("Primljena porudzbina (RED): " + poruka);
+
+                        ObradiRedIStek();
+                    }
+                }
+            }
+
+            Console.WriteLine("Konobar se diskonektovao. Gasim zadatak 5.");
+            try { serverSocket.Close(); } catch { }
+        }
+
+        private static void DodeliUlogu(Socket s, string poruka)
+        {
+            // ocekujemo: ULOGA|KONOBAR / ULOGA|KUVAR / ULOGA|BARMEN
+            if (string.IsNullOrWhiteSpace(poruka)) return;
+
+            string[] d = poruka.Split('|');
+            if (d.Length < 2) return;
+
+            string uloga = d[1];
+
+            if (uloga == "KONOBAR")
+            {
+                soketKonobar = s;
+                PosaljiString(s, "OK|KONOBAR");
+                Console.WriteLine("Prijavljen KONOBAR.");
+            }
+            else if (uloga == "KUVAR")
+            {
+                soketKuvar = s;
+                kuvarSlobodan = true;
+                PosaljiString(s, "OK|KUVAR");
+                Console.WriteLine("Prijavljen KUVAR.");
+            }
+            else if (uloga == "BARMEN")
+            {
+                soketBarmen = s;
+                barmenSlobodan = true;
+                PosaljiString(s, "OK|BARMEN");
+                Console.WriteLine("Prijavljen BARMEN.");
+            }
+        }
+
+        private static void OsluskujResurs(Socket s, string nazivResursa)
+        {
+            while (true)
+            {
+                string poruka = PrimiString(s);
+                if (poruka == null) break;
+
+                // SPREMNO|id|brojStola
+                if (poruka.StartsWith("SPREMNO|"))
+                {
+                    string[] d = poruka.Split('|');
+                    if (d.Length < 3) continue;
+
+                    string id = d[1];
+                    string sto = d[2];
+
+                    lock (bravaZadatak5)
+                    {
+                        if (nazivResursa == "KUVAR") kuvarSlobodan = true;
+                        if (nazivResursa == "BARMEN") barmenSlobodan = true;
+
+                        Console.WriteLine(nazivResursa + " -> SPREMNO: id=" + id + ", sto=" + sto);
+
+                        // javi konobaru da može dostava
+                        if (soketKonobar != null)
+                        {
+                            PosaljiString(soketKonobar, "DOSTAVA|" + id + "|" + sto);
+                        }
+
+                        ObradiRedIStek();
+                    }
+                }
+            }
+        }
+
+        private static void ObradiRedIStek()
+        {
+            // 1) iz REDA pokušaj dodelu, ako ne može -> u STEK
+            while (redPorudzbina.Count > 0)
+            {
+                string por = redPorudzbina.Dequeue();
+                if (!PokusajDodelu(por))
+                {
+                    stekPorudzbina.Push(por);
+                    Console.WriteLine("Nema resursa -> porudzbina u STEK: " + por);
+                }
+            }
+
+            // 2) ako ima slobodnog resursa, skidaj sa vrha STEKA
+            bool nastavi = true;
+            while (nastavi && stekPorudzbina.Count > 0)
+            {
+                string por = stekPorudzbina.Peek();
+                if (PokusajDodelu(por))
+                {
+                    stekPorudzbina.Pop();
+                }
+                else
+                {
+                    nastavi = false;
+                }
+            }
+        }
+
+        private static bool PokusajDodelu(string poruka)
+        {
+            // PORUDZBINA|id|brojStola|kategorija|naziv|cena
+            string[] d = poruka.Split('|');
+            if (d.Length < 6) return true;
+
+            string id = d[1];
+            string sto = d[2];
+            string kategorija = d[3];
+            string naziv = d[4];
+            string cena = d[5];
+
+            if (kategorija == "HRANA")
+            {
+                if (soketKuvar != null && kuvarSlobodan)
+                {
+                    kuvarSlobodan = false;
+                    PosaljiString(soketKuvar, "DODELA|" + id + "|" + sto + "|" + kategorija + "|" + naziv + "|" + cena);
+                    Console.WriteLine("Dodeljeno KUVARU: " + naziv + " (id=" + id + ")");
+                    return true;
+                }
+                return false;
+            }
+            else // PICE
+            {
+                if (soketBarmen != null && barmenSlobodan)
+                {
+                    barmenSlobodan = false;
+                    PosaljiString(soketBarmen, "DODELA|" + id + "|" + sto + "|" + kategorija + "|" + naziv + "|" + cena);
+                    Console.WriteLine("Dodeljeno BARMENU: " + naziv + " (id=" + id + ")");
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        private static void PosaljiString(Socket s, string poruka)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(poruka);
+            s.Send(data);
+        }
+
+        private static string PrimiString(Socket s)
+        {
+            try
+            {
+                byte[] buffer = new byte[2048];
+                int bytes = s.Receive(buffer);
+                if (bytes == 0) return null;
+                return Encoding.UTF8.GetString(buffer, 0, bytes);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
     }
 }
