@@ -20,6 +20,7 @@ namespace Client
         {
             Console.WriteLine("1 - TCP");
             Console.WriteLine("2 - UDP");
+            Console.WriteLine("3 - Zadatak 5 (Konobar)");
             string izbor = Console.ReadLine();
 
             if (izbor == "2")
@@ -48,6 +49,7 @@ namespace Client
                 Console.ReadKey();
                 return;
             }
+         
 
 
             // 1) Kreiranje utičnice:
@@ -58,6 +60,73 @@ namespace Client
 
             // 3) Connect:
             clientSocket.Connect(serverEndPoint);
+            if (izbor == "3")
+            {
+                Console.WriteLine("KONOBAR (Zadatak 5) povezan na server.");
+
+                // prijava uloge
+                clientSocket.Send(Encoding.UTF8.GetBytes("ULOGA|KONOBAR"));
+
+                byte[] okBuf1 = new byte[BUFFER_SIZE];
+                int okBr1 = clientSocket.Receive(okBuf1);
+                Console.WriteLine(Encoding.UTF8.GetString(okBuf1, 0, okBr1));
+
+                // unos stola
+                Console.Write("Unesi broj stola: ");
+                int brojStolaZ5 = int.Parse(Console.ReadLine());
+
+                // 5 porudzbina - STRING
+                for (int i = 0; i < 5; i++)
+                {
+                    Console.WriteLine("Unos porudzbine #{0}", i + 1);
+
+                    Console.Write("Unesi naziv artikla: ");
+                    string naziv = Console.ReadLine();
+
+                    Console.Write("Unesi cenu: ");
+                    string cena = Console.ReadLine();
+
+                    Console.WriteLine("Unesi kategoriju: 1 - Hrana, 2 - Pice");
+                    string izborKat = Console.ReadLine();
+
+                    string kategorija = (izborKat == "2") ? "PICE" : "HRANA";
+                    string id = (i + 1).ToString();
+
+                    string poruka = "PORUDZBINA|" + id + "|" + brojStolaZ5 + "|" + kategorija + "|" + naziv + "|" + cena;
+                    clientSocket.Send(Encoding.UTF8.GetBytes(poruka));
+
+                    Console.WriteLine("Poslata porudzbina.");
+                }
+
+                Console.WriteLine("Cekam poruke DOSTAVA od servera...");
+
+                int brojDostava = 0;
+                while (brojDostava < 5)
+                {
+                    byte[] buf = new byte[BUFFER_SIZE];
+                    int br = clientSocket.Receive(buf);
+                    if (br == 0) break;
+
+                    string msg = Encoding.UTF8.GetString(buf, 0, br);
+                    Console.WriteLine("SERVER: " + msg);
+
+                    if (msg.StartsWith("DOSTAVA|"))
+                        brojDostava++;
+                }
+
+                Console.WriteLine("Stigle su sve dostave (5). Zatvaram konobara.");
+
+                clientSocket.Close();
+                return;
+            }
+
+            // ovde nastavlja samo zadatak 4
+            if (izbor != "1")
+            {
+                clientSocket.Close();
+                return;
+            }
+
 
             Console.WriteLine("Povezan na server!");
 
@@ -72,16 +141,16 @@ namespace Client
             Sto sto = new Sto(brojStola, brojGostiju, StatusEnum.ZAUZET, new List<Porudzbina>());
 
             // SERIJALIZACIJA (BinaryFormatter + MemoryStream)
-            byte[] dataBufferUdp;
+            byte[] dataBuffer1;
             using (MemoryStream ms = new MemoryStream())
             {
                 BinaryFormatter bf = new BinaryFormatter();
                 bf.Serialize(ms, sto);
-                dataBufferUdp = ms.ToArray();
+                dataBuffer1 = ms.ToArray();
             }
 
             // SLANJE PREKO TCP
-            int bytesSentTcp = clientSocket.Send(dataBufferUdp);
+            int bytesSentTcp = clientSocket.Send(dataBuffer1);
             Console.WriteLine("Sent {0} bytes", bytesSentTcp);
 
 

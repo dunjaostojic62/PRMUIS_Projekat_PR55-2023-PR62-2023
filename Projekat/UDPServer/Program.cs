@@ -238,6 +238,8 @@ namespace Server
                 {
                     lock (bravaZadatak5)
                     {
+                        listaPorudzbina.Add(poruka);
+
                         redPorudzbina.Enqueue(poruka);
                         Console.WriteLine("Primljena porudzbina (RED): " + poruka);
 
@@ -337,6 +339,7 @@ namespace Server
                 string por = stekPorudzbina.Peek();
                 if (PokusajDodelu(por))
                 {
+                    Console.WriteLine("Povlacim sa STEKA i dodeljujem: " + por);
                     stekPorudzbina.Pop();
                 }
                 else
