@@ -2,6 +2,11 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Collections.Generic;
+using Common;
+
 
 namespace Client
 {
@@ -62,9 +67,21 @@ namespace Client
             Console.Write("Unesi broj gostiju: ");
             int brojGostiju = int.Parse(Console.ReadLine());
 
-            string messageTcp = brojStola + "|" + brojGostiju;
 
-            int bytesSentTcp = clientSocket.Send(Encoding.UTF8.GetBytes(messageTcp));
+            // Kreiranje objekta Sto
+            Sto sto = new Sto(brojStola, brojGostiju, StatusEnum.ZAUZET, new List<Porudzbina>());
+
+            // SERIJALIZACIJA (BinaryFormatter + MemoryStream)
+            byte[] dataBufferUdp;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                bf.Serialize(ms, sto);
+                dataBufferUdp = ms.ToArray();
+            }
+
+            // SLANJE PREKO TCP
+            int bytesSentTcp = clientSocket.Send(dataBufferUdp);
             Console.WriteLine("Sent {0} bytes", bytesSentTcp);
 
 
@@ -72,6 +89,62 @@ namespace Client
             byte[] buffer = new byte[BUFFER_SIZE];
             int bytesReceived = clientSocket.Receive(buffer);
             Console.WriteLine("Received: {0}", Encoding.UTF8.GetString(buffer, 0, bytesReceived));
+
+            // Unos 3 porudzbine i slanje serveru
+            for (int i = 0; i < 3; i++)
+            {
+                Console.WriteLine("Unos porudzbine #{0}", i + 1);
+
+                Console.Write("Unesi naziv artikla: ");
+                string nazivArtikla = Console.ReadLine();
+
+                Console.Write("Unesi cenu: ");
+                double cena = double.Parse(Console.ReadLine());
+
+                Console.WriteLine("Unesi kategoriju: 1 - Hrana, 2 - Pice");
+                string izborKategorije = Console.ReadLine();
+
+                KategorijaEnum kategorija;
+                if (izborKategorije == "2")
+                    kategorija = KategorijaEnum.PICE;
+                else
+                    kategorija = KategorijaEnum.HRANA;
+
+                Porudzbina porudzbina = new Porudzbina(nazivArtikla, kategorija, cena, StatusPorudzbine.PRIPREMA);
+
+                // Serijalizacija porudzbine
+                byte[] dataBufferTcp;
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    BinaryFormatter bf = new BinaryFormatter();
+                    bf.Serialize(ms, porudzbina);
+                    dataBufferTcp = ms.ToArray();
+                }
+
+                // Slanje porudzbine
+                clientSocket.Send(dataBufferTcp);
+                Console.WriteLine("Porudzbina poslata serveru.");
+            }
+
+            // Zahtev za racun = saljemo null kao Porudzbina
+            byte[] krajBuffer;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                bf.Serialize(ms, (Porudzbina)null);
+                krajBuffer = ms.ToArray();
+            }
+            clientSocket.Send(krajBuffer);
+            Console.WriteLine("Poslat zahtev za racun.");
+
+            // Primamo racun od servera (kao tekst)
+            byte[] racunBuffer = new byte[BUFFER_SIZE];
+            int bytesRacun = clientSocket.Receive(racunBuffer);
+            string racun = Encoding.UTF8.GetString(racunBuffer, 0, bytesRacun);
+
+            Console.WriteLine("=== RACUN ===");
+            Console.WriteLine(racun);
+
 
             clientSocket.Shutdown(SocketShutdown.Both);
             clientSocket.Close();

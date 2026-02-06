@@ -3,6 +3,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using Common;
 
 
 namespace Server
@@ -66,17 +69,27 @@ namespace Server
             byte[] buffer = new byte[BUFFER_SIZE];
             int bytesReceivedTcp = acceptedSocket.Receive(buffer);
 
-            string received = Encoding.UTF8.GetString(buffer, 0, bytesReceivedTcp);
-            Console.WriteLine("Received: {0}", received);
+            // uzimamo tacno primljene bajtove (da ne smeta ostatak bafera)
+            byte[] tacniBajtovi = new byte[bytesReceivedTcp];
+            Array.Copy(buffer, tacniBajtovi, bytesReceivedTcp);
 
-            string[] delovi = received.Split('|');
-            if (delovi.Length == 2)
+            // DESERIJALIZACIJA (BinaryFormatter + MemoryStream)
+            Sto primljeniSto;
+            using (MemoryStream ms = new MemoryStream(tacniBajtovi))
             {
-                Console.WriteLine("Broj stola: {0}", delovi[0]);
-                Console.WriteLine("Broj gostiju: {0}", delovi[1]);
+                BinaryFormatter bf = new BinaryFormatter();
+                primljeniSto = (Sto)bf.Deserialize(ms);
             }
 
-            stanjeStolova.Add(received);
+            // TEST ISPIS (dokaz da radi)
+            Console.WriteLine("Primljen sto:");
+            Console.WriteLine("Broj stola: {0}", primljeniSto.BrojStola);
+            Console.WriteLine("Broj gostiju: {0}", primljeniSto.BrojGostiju);
+            Console.WriteLine("Status: {0}", primljeniSto.Status);
+            Console.WriteLine("Broj porudzbina: {0}", primljeniSto.Porudzbine.Count);
+
+            // ZADATAK 2 "cuva stanje" - sad cuvamo kao string (minimalno) ili kasnije kao List<Sto>
+            stanjeStolova.Add(primljeniSto.BrojStola + "|" + primljeniSto.BrojGostiju);
 
             // prikaz da se vidi da "cuva stanje"
             Console.WriteLine("Stanje stolova (server pamti):");
@@ -85,8 +98,63 @@ namespace Server
                 Console.WriteLine(stanjeStolova[i]);
             }
 
-
             acceptedSocket.Send(Encoding.UTF8.GetBytes("OK"));
+
+            // Lista aktivnih zadataka (porudzbina) za ovaj sto
+            List<Porudzbina> aktivnePorudzbine = new List<Porudzbina>();
+
+            while (true)
+            {
+                byte[] porudzbinaBuffer = new byte[BUFFER_SIZE];
+                int bytesPorudzbina = acceptedSocket.Receive(porudzbinaBuffer);
+
+                byte[] tacniBajtoviPorudzbina = new byte[bytesPorudzbina];
+                Array.Copy(porudzbinaBuffer, tacniBajtoviPorudzbina, bytesPorudzbina);
+
+                Porudzbina primljenaPorudzbina;
+                using (MemoryStream ms = new MemoryStream(tacniBajtoviPorudzbina))
+                {
+                    BinaryFormatter bf = new BinaryFormatter();
+                    primljenaPorudzbina = (Porudzbina)bf.Deserialize(ms);
+                }
+
+                // null = zahtev za racun
+                if (primljenaPorudzbina == null)
+                    break;
+
+                aktivnePorudzbine.Add(primljenaPorudzbina);
+
+                Console.WriteLine("Primljena porudzbina: {0}, {1}, {2}",
+                    primljenaPorudzbina.NazivArtikla,
+                    primljenaPorudzbina.Kategorija,
+                    primljenaPorudzbina.Cena);
+            }
+
+            // Racunanje ukupnog iznosa
+            double ukupno = 0;
+            for (int i = 0; i < aktivnePorudzbine.Count; i++)
+            {
+                ukupno += aktivnePorudzbine[i].Cena;
+            }
+
+            // Formiranje racuna (tekst)
+            string racun =
+                "Sto: " + primljeniSto.BrojStola + Environment.NewLine +
+                "Broj gostiju: " + primljeniSto.BrojGostiju + Environment.NewLine +
+                "Porudzbine:" + Environment.NewLine;
+
+            for (int i = 0; i < aktivnePorudzbine.Count; i++)
+            {
+                Porudzbina p = aktivnePorudzbine[i];
+                racun += "- " + p.NazivArtikla + " (" + p.Kategorija + ") = " + p.Cena + Environment.NewLine;
+            }
+
+            racun += "Ukupno: " + ukupno;
+
+            // Slanje racuna konobaru
+            acceptedSocket.Send(Encoding.UTF8.GetBytes(racun));
+            Console.WriteLine("Racun poslat konobaru.");
+
 
             acceptedSocket.Shutdown(SocketShutdown.Both);
             acceptedSocket.Close();
