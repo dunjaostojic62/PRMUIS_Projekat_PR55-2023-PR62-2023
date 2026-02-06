@@ -24,7 +24,7 @@ namespace Client
 
             if (izbor == "2")
             {
-                // UDP SLANJE (vežbe)
+                // UDP SLANJE 
                 Socket sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
                 IPEndPoint recvEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 27015);
@@ -126,16 +126,15 @@ namespace Client
                 Console.WriteLine("Porudzbina poslata serveru.");
             }
 
-            // Zahtev za racun = saljemo null kao Porudzbina
-            byte[] krajBuffer;
-            using (MemoryStream ms = new MemoryStream())
+            Console.WriteLine("Unesi 1 za obracun racuna:");
+            string obracun = Console.ReadLine().Trim();
+
+            if (obracun == "1")
             {
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(ms, (Porudzbina)null);
-                krajBuffer = ms.ToArray();
+                clientSocket.Send(Encoding.UTF8.GetBytes(obracun));
+                Console.WriteLine("Zahtev za obracun racuna je poslat serveru.");
             }
-            clientSocket.Send(krajBuffer);
-            Console.WriteLine("Poslat zahtev za racun.");
+            
 
             // Primamo racun od servera (kao tekst)
             byte[] racunBuffer = new byte[BUFFER_SIZE];
