@@ -17,7 +17,7 @@ namespace Kuvar
             Console.WriteLine("KUVAR povezan.");
 
             // prijava uloge
-            s.Send(Encoding.UTF8.GetBytes("ULOGA|KUVAR"));
+            s.Send(Encoding.UTF8.GetBytes("ULOGA|KUVAR\n"));
 
             byte[] buffer = new byte[2048];
             int br = s.Receive(buffer);
@@ -40,7 +40,7 @@ namespace Kuvar
                     Console.WriteLine("Pritisni ENTER kada je spremno...");
                     Console.ReadLine();
 
-                    string spremno = "SPREMNO|" + id + "|" + sto;
+                    string spremno = "SPREMNO|" + id + "|" + sto + "\n";
                     s.Send(Encoding.UTF8.GetBytes(spremno));
                     Console.WriteLine("Poslato SPREMNO za id={0}", id);
                 }

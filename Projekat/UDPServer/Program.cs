@@ -192,8 +192,8 @@ namespace Server
 
 
                 acceptedSocket.Shutdown(SocketShutdown.Both);
-                acceptedSocket.Close();
-                serverSocket.Close();
+               // acceptedSocket.Close();
+                //serverSocket.Close();
 
                 Console.ReadKey();
             }
@@ -209,13 +209,13 @@ namespace Server
 
             // PRIHVATAMO 3 KONEKCIJE (blokirajuce)
             Socket s1 = serverSocket.Accept();
-            DodeliUlogu(s1, PrimiString(s1));
+            DodeliUlogu(s1, PrimiLiniju(s1));
 
             Socket s2 = serverSocket.Accept();
-            DodeliUlogu(s2, PrimiString(s2));
+            DodeliUlogu(s2, PrimiLiniju(s2));
 
             Socket s3 = serverSocket.Accept();
-            DodeliUlogu(s3, PrimiString(s3));
+            DodeliUlogu(s3, PrimiLiniju(s3));
 
             Console.WriteLine("Sve uloge su prijavljene. Server radi red/stek.");
 
@@ -231,8 +231,12 @@ namespace Server
             // GLAVNA NIT: prima porudzbine od konobara
             while (true)
             {
-                string poruka = PrimiString(soketKonobar);
-                if (poruka == null) break;
+                string poruka = PrimiLiniju(soketKonobar);
+                if (poruka == null)
+                {
+                    Thread.Sleep(50);
+                    continue;
+                }
 
                 if (poruka.StartsWith("PORUDZBINA|"))
                 {
@@ -246,10 +250,47 @@ namespace Server
                         ObradiRedIStek();
                     }
                 }
+                else if (poruka.StartsWith("RACUN|"))
+                {
+                    // RACUN|brojStola
+                    string[] d = poruka.Split('|');
+                    if (d.Length >= 2)
+                    {
+                        string sto = d[1];
+
+                        double ukupno = 0;
+                        string tekst = "RACUN ZA STO " + sto + "\n";
+
+                        lock (bravaZadatak5)
+                        {
+                            for (int i = 0; i < listaPorudzbina.Count; i++)
+                            {
+                                // PORUDZBINA|id|sto|kategorija|naziv|cena
+                                string[] p = listaPorudzbina[i].Split('|');
+                                if (p.Length >= 6 && p[2] == sto)
+                                {
+                                    string naziv = p[4];
+                                    string cenaS = p[5];
+
+                                    double cena;
+                                    double.TryParse(cenaS, out cena);
+
+                                    ukupno += cena;
+                                    tekst += "- " + naziv + " = " + cena + "\n";
+                                }
+                            }
+                        }
+
+                        tekst += "UKUPNO: " + ukupno;
+                        PosaljiString(soketKonobar, "RACUN_OK|" + tekst);
+                        Console.WriteLine("Poslat racun za sto " + sto);
+                    }
+                }
+
             }
 
             Console.WriteLine("Konobar se diskonektovao. Gasim zadatak 5.");
-            try { serverSocket.Close(); } catch { }
+            //try { serverSocket.Close(); } catch { }
         }
 
         private static void DodeliUlogu(Socket s, string poruka)
@@ -288,7 +329,7 @@ namespace Server
         {
             while (true)
             {
-                string poruka = PrimiString(s);
+                string poruka = PrimiLiniju(s);
                 if (poruka == null) break;
 
                 // SPREMNO|id|brojStola
@@ -387,18 +428,42 @@ namespace Server
 
         private static void PosaljiString(Socket s, string poruka)
         {
-            byte[] data = Encoding.UTF8.GetBytes(poruka);
+            byte[] data = Encoding.UTF8.GetBytes(poruka+"\n");
             s.Send(data);
         }
 
-        private static string PrimiString(Socket s)
+        /* private static string PrimiString(Socket s)
+         {
+             try
+             {
+                 byte[] buffer = new byte[2048];
+                 int bytes = s.Receive(buffer);
+                 if (bytes == 0) return null;
+                 return Encoding.UTF8.GetString(buffer, 0, bytes);
+             }
+             catch
+             {
+                 return null;
+             }
+         }
+        */
+
+        private static string PrimiLiniju(Socket s)
         {
             try
             {
-                byte[] buffer = new byte[2048];
-                int bytes = s.Receive(buffer);
-                if (bytes == 0) return null;
-                return Encoding.UTF8.GetString(buffer, 0, bytes);
+                List<byte> bytes = new List<byte>();
+                byte[] b = new byte[1];
+
+                while (true)
+                {
+                    int r = s.Receive(b, 0, 1, SocketFlags.None);
+                    if (r == 0) return null;           // diskonekt
+                    if (b[0] == (byte)'\n') break;     // kraj poruke
+                    bytes.Add(b[0]);
+                }
+
+                return Encoding.UTF8.GetString(bytes.ToArray()).Trim();
             }
             catch
             {

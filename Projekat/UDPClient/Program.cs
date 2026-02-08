@@ -45,7 +45,7 @@ namespace Client
                     Console.WriteLine("sendto failed with error: {0}", ex.Message);
                 }
 
-                sendSocket.Close();
+                //sendSocket.Close();
                 Console.ReadKey();
                 return;
             }
@@ -65,7 +65,7 @@ namespace Client
                 Console.WriteLine("KONOBAR (Zadatak 5) povezan na server.");
 
                 // prijava uloge
-                clientSocket.Send(Encoding.UTF8.GetBytes("ULOGA|KONOBAR"));
+                clientSocket.Send(Encoding.UTF8.GetBytes("ULOGA|KONOBAR\n"));
 
                 byte[] okBuf1 = new byte[BUFFER_SIZE];
                 int okBr1 = clientSocket.Receive(okBuf1);
@@ -93,12 +93,12 @@ namespace Client
                     string id = (i + 1).ToString();
 
                     string poruka = "PORUDZBINA|" + id + "|" + brojStolaZ5 + "|" + kategorija + "|" + naziv + "|" + cena;
-                    clientSocket.Send(Encoding.UTF8.GetBytes(poruka));
+                    clientSocket.Send(Encoding.UTF8.GetBytes(poruka+"\n"));
 
                     Console.WriteLine("Poslata porudzbina.");
                 }
 
-                Console.WriteLine("Cekam poruke DOSTAVA od servera...");
+                /*Console.WriteLine("Cekam poruke DOSTAVA od servera...");
 
                 int brojDostava = 0;
                 while (brojDostava < 5)
@@ -117,13 +117,55 @@ namespace Client
                 Console.WriteLine("Stigle su sve dostave (5). Zatvaram konobara.");
 
                 clientSocket.Close();
-                return;
+                return;*/
+
+                Console.WriteLine("Cekam poruke DOSTAVA od servera...");
+
+                int brojDostava = 0;
+                string ostatak = "";
+
+                while (brojDostava < 5)
+                {
+                    byte[] buf = new byte[BUFFER_SIZE];
+                    int br = clientSocket.Receive(buf);
+                    if (br == 0) break;
+
+                    ostatak += Encoding.UTF8.GetString(buf, 0, br);
+
+                    string[] linije = ostatak.Split('\n');
+
+                    // poslednji deo može biti nepotpun -> čuvamo ga
+                    ostatak = linije[linije.Length - 1];
+
+                    for (int i = 0; i < linije.Length - 1; i++)
+                    {
+                        string msg = linije[i].Trim();
+                        if (msg.Length == 0) continue;
+
+                        Console.WriteLine("SERVER: " + msg);
+
+                        if (msg.StartsWith("DOSTAVA|"))
+                            brojDostava++;
+                    }
+                }
+
+                Console.WriteLine("Stigle su sve dostave (5).");
+
+                Console.WriteLine("Saljem zahtev za racun...");
+                clientSocket.Send(Encoding.UTF8.GetBytes("RACUN|" + brojStolaZ5 + "\n"));
+
+                 string odgovor = PrimiLiniju(clientSocket);
+                 Console.WriteLine("SERVER: " + odgovor);
+
+                 clientSocket.Close();
+                 return;
+
             }
 
             // ovde nastavlja samo zadatak 4
             if (izbor != "1")
             {
-                clientSocket.Close();
+               // clientSocket.Close();
                 return;
             }
 
@@ -219,5 +261,29 @@ namespace Client
 
             Console.ReadKey();
         }
+
+        private static string PrimiLiniju(Socket s)
+        {
+            try
+            {
+                List<byte> bytes = new List<byte>();
+                byte[] b = new byte[1];
+
+                while (true)
+                {
+                    int r = s.Receive(b, 0, 1, SocketFlags.None);
+                    if (r == 0) return null;
+                    if (b[0] == (byte)'\n') break;
+                    bytes.Add(b[0]);
+                }
+
+                return Encoding.UTF8.GetString(bytes.ToArray()).Trim();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
     }
 }

@@ -16,7 +16,7 @@ namespace Barmen
             s.Connect(new IPEndPoint(IPAddress.Parse(SERVER_IP), SERVER_PORT));
             Console.WriteLine("BARMEN povezan.");
 
-            s.Send(Encoding.UTF8.GetBytes("ULOGA|BARMEN"));
+            s.Send(Encoding.UTF8.GetBytes("ULOGA|BARMEN\n"));
 
             byte[] buffer = new byte[2048];
             int br = s.Receive(buffer);
@@ -38,10 +38,11 @@ namespace Barmen
                     Console.WriteLine("Pritisni ENTER kada je spremno...");
                     Console.ReadLine();
 
-                    string spremno = "SPREMNO|" + id + "|" + sto;
+                    string spremno = "SPREMNO|" + id + "|" + sto + "\n";
                     s.Send(Encoding.UTF8.GetBytes(spremno));
                     Console.WriteLine("Poslato SPREMNO za id={0}", id);
                 }
+
             }
         }
     }
