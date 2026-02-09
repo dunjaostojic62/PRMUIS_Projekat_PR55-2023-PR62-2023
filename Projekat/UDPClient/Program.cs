@@ -21,6 +21,7 @@ namespace Client
             Console.WriteLine("1 - TCP");
             Console.WriteLine("2 - UDP");
             Console.WriteLine("3 - Zadatak 5 (Konobar)");
+            Console.WriteLine("4 - Zadatak 7 (Rezervacije)");
             string izbor = Console.ReadLine();
 
             if (izbor == "2")
@@ -60,6 +61,42 @@ namespace Client
 
             // 3) Connect:
             clientSocket.Connect(serverEndPoint);
+
+            if (izbor == "4")
+            {
+                    Console.WriteLine("KONOBAR – ZADATAK 7 (Rezervacije)");
+                    Console.WriteLine("--------------------------------");
+
+                    // 1) prijava uloge
+                    clientSocket.Send(Encoding.UTF8.GetBytes("ULOGA|KONOBAR\n"));
+                    string odgovor = PrimiLiniju(clientSocket);
+                    Console.WriteLine("SERVER: " + odgovor);
+
+                    // 2) unos rezervacije (primer)
+                    Console.WriteLine("Saljem rezervaciju...");
+                    clientSocket.Send(Encoding.UTF8.GetBytes(
+                        "REZERVACIJA|2|19:30|4|1\n"));   // sto 2, 4 gosta, 1 minut
+                    odgovor = PrimiLiniju(clientSocket);
+                    Console.WriteLine("SERVER: " + odgovor);
+
+                    // 3) zauzimanje stola
+                    Console.WriteLine("Javljam da su gosti dosli...");
+                    clientSocket.Send(Encoding.UTF8.GetBytes("ZAUZMI|2\n"));
+                    odgovor = PrimiLiniju(clientSocket);
+                    Console.WriteLine("SERVER: " + odgovor);
+
+                    // 4) trazenje statusa stolova
+                    Console.WriteLine("Trazim status stolova...");
+                    clientSocket.Send(Encoding.UTF8.GetBytes("STATUS?\n"));
+                    odgovor = PrimiLiniju(clientSocket);
+                    Console.WriteLine("SERVER STATUS: " + odgovor);
+
+                    Console.WriteLine("\nZadatak 7 demonstriran.");
+                    Console.WriteLine("Pritisni taster za izlaz...");
+                    Console.ReadKey();
+                return;
+            }
+
             if (izbor == "3")
             {
                 Console.WriteLine("KONOBAR (Zadatak 5) povezan na server.");

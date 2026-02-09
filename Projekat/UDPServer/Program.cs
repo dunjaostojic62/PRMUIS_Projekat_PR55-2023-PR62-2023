@@ -1,11 +1,12 @@
-﻿using System;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
+﻿using Common;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
-using Common;
+using System.Text;
 using System.Threading;
 
 namespace Server
@@ -30,12 +31,25 @@ namespace Server
         private static bool barmenSlobodan = true;
 
         private static object bravaZadatak5 = new object();
+        private class Rezervacija
+        {
+            public int Sto;
+            public string VremeDolaska;   
+            public int BrojGostiju;
+            public DateTime Kreirana;   
+            public int TrajanjeMin;      
+        }
+        private static Dictionary<int, Rezervacija> rezervacije = new Dictionary<int, Rezervacija>();
+        // stolovi vec imas kao stanjeStolova listu stringova – ali je bolje da za zadatak 7 imas mapu statusa:
+        private static Dictionary<int, StatusEnum> statusStolova = new Dictionary<int, StatusEnum>();
 
         static void Main(string[] args)
         {
             Console.WriteLine("1 - TCP");
             Console.WriteLine("2 - UDP");
             Console.WriteLine("3 - TCP(Zadatak 5)");
+            Console.WriteLine("4 - TCP (Rezervacije + Vizualizacija + Multipleksiranje)");
+
             string izbor = Console.ReadLine();
 
             if (izbor == "2")
@@ -70,6 +84,12 @@ namespace Server
             if (izbor == "3")
             {
                 PokreniZadatak5();
+                return;
+            }
+
+            if (izbor == "4")
+            {
+                PokreniZadatak7();
                 return;
             }
 
@@ -469,6 +489,179 @@ namespace Server
             {
                 return null;
             }
+        }
+        private static void InitStoloveAkoTreba(int maxSto = 10)
+        {
+            if (statusStolova.Count > 0) return;
+            for (int i = 1; i <= maxSto; i++)
+                statusStolova[i] = StatusEnum.SLOBODAN;
+        }
+
+        private static void ProveriIstekRezervacija()
+        {
+            // poziva se periodicno (npr jednom u sekundi u Select petlji)
+            List<int> zaBrisanje = new List<int>();
+
+            foreach (var kv in rezervacije)
+            {
+                Rezervacija r = kv.Value;
+                // Rezervacija vazi TrajanjeMin od trenutka kreiranja (po tvom ranijem modelu)
+                DateTime istek = r.Kreirana.AddMinutes(r.TrajanjeMin);
+                if (DateTime.Now > istek)
+                    zaBrisanje.Add(kv.Key);
+            }
+
+            foreach (int sto in zaBrisanje)
+            {
+                rezervacije.Remove(sto);
+                // ako nije zauzet, vrati na slobodan
+                if (statusStolova.ContainsKey(sto) && statusStolova[sto] == StatusEnum.REZERVISAN)
+                    statusStolova[sto] = StatusEnum.SLOBODAN;
+            }
+        }
+        private static void PrikaziStanjeRestorana()
+        {
+            Console.Clear();
+            Console.WriteLine("=== STANJE RESTORANA (Zadatak 7) ===\n");
+
+            Console.WriteLine("Stolovi:");
+            foreach (var kv in statusStolova.OrderBy(k => k.Key))
+            {
+                int sto = kv.Key;
+                StatusEnum st = kv.Value;
+
+                string dodatno = "";
+                if (st == StatusEnum.REZERVISAN && rezervacije.ContainsKey(sto))
+                {
+                    var r = rezervacije[sto];
+                    dodatno = $" (dolazak {r.VremeDolaska}, gosti {r.BrojGostiju})";
+                }
+                Console.WriteLine($"- Sto {sto}: {st}{dodatno}");
+            }
+
+            Console.WriteLine("\nResursi:");
+            Console.WriteLine($"- Kuvar:  {(kuvarSlobodan ? "SLOBODAN" : "ZAUZET")}");
+            Console.WriteLine($"- Barmen: {(barmenSlobodan ? "SLOBODAN" : "ZAUZET")}");
+            Console.WriteLine("\nAktivne porudzbine (ako koristis listuPorudzbina/red/ste k iz zad.5):");
+            // ako vec imas listaPorudzbina / redPorudzbina itd. – ispiši bar count
+            Console.WriteLine($"- Red: {redPorudzbina.Count}, Stek: {stekPorudzbina.Count}");
+        }
+
+        private static void PokreniZadatak7()
+        {
+            InitStoloveAkoTreba(10);
+
+            Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listenSocket.Bind(new IPEndPoint(IPAddress.Any, SERVER_PORT));
+            listenSocket.Listen(10);
+
+            List<Socket> clients = new List<Socket>();
+            while (true)
+            {
+                // 1) priprema liste soketa za citanje
+                List<Socket> readSockets = new List<Socket>();
+                readSockets.Add(listenSocket);
+                readSockets.AddRange(clients);
+
+                // 2) multiplex (timeout 1s)
+                Socket.Select(readSockets, null, null, 1000000);
+
+                // 3) periodicno: iste k rezervacija + vizualizacija
+                ProveriIstekRezervacija();
+                PrikaziStanjeRestorana();
+
+                foreach (Socket s in readSockets)
+                {
+                    if (s == listenSocket)
+                    {
+                        Socket client = listenSocket.Accept();
+                        clients.Add(client);
+                        continue;
+                    }
+
+                    string poruka = PrimiLiniju(s);
+                    if (poruka == null)
+                    {
+                        // diskonekt
+                        clients.Remove(s);
+                        try { s.Close(); } catch { }
+                        continue;
+                    }
+
+                    ObradiPorukuZadatak7(s, poruka);
+                }
+            }
+        }
+
+        private static void ObradiPorukuZadatak7(Socket s, string poruka)
+        {
+            if (poruka.StartsWith("ULOGA|"))
+            {
+                DodeliUlogu(s, poruka); // vec imas ovu logiku u zadatku 5
+                return;
+            }
+
+            if (poruka.StartsWith("REZERVACIJA|"))
+            {
+                string[] d = poruka.Split('|');
+                if (d.Length < 5) { PosaljiString(s, "ERR|REZERVACIJA_FORMAT"); return; }
+
+                int sto = int.Parse(d[1]);
+                string vreme = d[2];
+                int gosti = int.Parse(d[3]);
+                int trajanje = int.Parse(d[4]);
+
+                // ako je sto zauzet - odbij
+                if (statusStolova.ContainsKey(sto) && statusStolova[sto] == StatusEnum.ZAUZET)
+                {
+                    PosaljiString(s, "REZERVACIJA|ODBIJENO|ZAUZET");
+                    return;
+                }
+
+                rezervacije[sto] = new Rezervacija
+                {
+                    Sto = sto,
+                    VremeDolaska = vreme,
+                    BrojGostiju = gosti,
+                    Kreirana = DateTime.Now,
+                    TrajanjeMin = trajanje
+                };
+
+                statusStolova[sto] = StatusEnum.REZERVISAN;
+                PosaljiString(s, "REZERVACIJA|OK");
+                return;
+            }
+
+            if (poruka.StartsWith("ZAUZMI|")) {
+                string[] d = poruka.Split('|');
+                if (d.Length < 2) { PosaljiString(s, "ERR|ZAUZMI_FORMAT"); return; }
+
+                int sto = int.Parse(d[1]);
+
+                statusStolova[sto] = StatusEnum.ZAUZET;
+                if (rezervacije.ContainsKey(sto))
+                    rezervacije.Remove(sto);
+
+                PosaljiString(s, "ZAUZMI|OK");
+                return;
+            }
+
+            if (poruka.StartsWith("OSLOBODI|")){
+                string[] d = poruka.Split('|');
+                int sto = int.Parse(d[1]);
+                statusStolova[sto] = StatusEnum.SLOBODAN;
+                PosaljiString(s, "OSLOBODI|OK");
+                return;
+            }
+            if (poruka == "STATUS?")
+            {
+                var sb = new StringBuilder();
+                foreach (var kv in statusStolova.OrderBy(k => k.Key))
+                    sb.Append($"STO|{kv.Key}:{kv.Value};");
+                PosaljiString(s, sb.ToString());
+                return;
+            }
+            PosaljiString(s, "ERR|NEPOZNATA_PORUKA");
         }
 
     }

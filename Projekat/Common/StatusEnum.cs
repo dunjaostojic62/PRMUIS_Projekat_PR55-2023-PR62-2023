@@ -9,6 +9,7 @@ namespace Common
     public enum  StatusEnum
     {
         SLOBODAN = 0,
-        ZAUZET = 1
+        ZAUZET = 1,
+        REZERVISAN = 2
     }
 }
