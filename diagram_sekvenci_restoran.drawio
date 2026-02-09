@@ -1,0 +1,142 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36" version="29.3.8">
+  <diagram id="diagram-1" name="Diagram sekvenci - restoran">
+    <mxGraphModel dx="2066" dy="1137" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="gost" parent="1" style="shape=umlLifeline;html=1;" value="Gost" vertex="1">
+          <mxGeometry height="800" width="120" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="menadzer" parent="1" style="shape=umlLifeline;html=1;" value="Menadžer" vertex="1">
+          <mxGeometry height="800" width="160" x="200" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="konobar" parent="1" style="shape=umlLifeline;html=1;" value="Konobar" vertex="1">
+          <mxGeometry height="800" width="160" x="400" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="server" parent="1" style="shape=umlLifeline;html=1;" value="Server" vertex="1">
+          <mxGeometry height="800" width="120" x="620" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kuvar" parent="1" style="shape=umlLifeline;html=1;" value="Kuvar&amp;nbsp;" vertex="1">
+          <mxGeometry height="800" width="160" x="800" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="barmen" parent="1" style="shape=umlLifeline;html=1;" value="Barmen" vertex="1">
+          <mxGeometry height="800" width="170" x="1000" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="memorija" parent="1" style="shape=umlLifeline;html=1;" value="Memorija" vertex="1">
+          <mxGeometry height="800" width="170" x="1220" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m1" edge="1" parent="1" style="endArrow=block;html=1;entryX=0.494;entryY=0.137;entryDx=0;entryDy=0;entryPerimeter=0;" target="server" value="1. Kreira/menja rezervaciju">
+          <mxGeometry relative="1" x="0.002" y="20" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="410" y="150" />
+            </Array>
+            <mxPoint x="280" y="150" as="sourcePoint" />
+            <mxPoint x="540" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m2" edge="1" parent="1" style="endArrow=block;html=1;entryX=0.502;entryY=0.188;entryDx=0;entryDy=0;entryPerimeter=0;" value="2. Upis/izmena rezervacije">
+          <mxGeometry relative="1" x="-0.0086" y="10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="680" y="170" as="sourcePoint" />
+            <mxPoint x="1305.3400000000001" y="170.4000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m3" edge="1" parent="1" style="endArrow=open;dashed=1;html=1;exitX=0.502;exitY=0.25;exitDx=0;exitDy=0;exitPerimeter=0;" value="3. Potvrda rezervacije">
+          <mxGeometry relative="1" x="0.0085" y="-10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="1305.3400000000001" y="210" as="sourcePoint" />
+            <mxPoint x="680" y="210" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m4" edge="1" parent="1" style="endArrow=block;html=1;entryX=0.504;entryY=0.375;entryDx=0;entryDy=0;entryPerimeter=0;" value="4. Gost dolazi i traži sto">
+          <mxGeometry relative="1" x="-0.0542" y="30" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="100" y="240" as="sourcePoint" />
+            <mxPoint x="480.6399999999999" y="240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m5" edge="1" parent="1" style="endArrow=block;html=1;entryX=0.5;entryY=0.3;entryDx=0;entryDy=0;entryPerimeter=0;" target="server" value="5. Prijava popune stola">
+          <mxGeometry relative="1" y="10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="480" y="280" as="sourcePoint" />
+            <mxPoint x="540" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m6" edge="1" parent="1" style="endArrow=block;html=1;entryX=0.502;entryY=0.349;entryDx=0;entryDy=0;entryPerimeter=0;" target="memorija" value="6. Ažuriranje stanja stola">
+          <mxGeometry relative="1" y="10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="680" y="320" as="sourcePoint" />
+            <mxPoint x="1160" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m7" edge="1" parent="1" style="endArrow=block;html=1;entryX=0.506;entryY=0.4;entryDx=0;entryDy=0;entryPerimeter=0;" target="server" value="7. Slanje liste porudžbina">
+          <mxGeometry relative="1" y="10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="480" y="360" as="sourcePoint" />
+            <mxPoint x="620" y="402" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m8" edge="1" parent="1" style="endArrow=block;html=1;entryX=0.502;entryY=0.35;entryDx=0;entryDy=0;entryPerimeter=0;" value="8. Evidentiranje porudžbine">
+          <mxGeometry relative="1" y="10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="680" y="400" as="sourcePoint" />
+            <mxPoint x="1305.3400000000001" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m9" edge="1" parent="1" style="endArrow=block;html=1;entryX=0.504;entryY=0.551;entryDx=0;entryDy=0;entryPerimeter=0;" value="9. Zadatak za kuhinju (hrana)">
+          <mxGeometry relative="1" x="-0.0036" y="10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="680" y="480" as="sourcePoint" />
+            <mxPoint x="880.6399999999999" y="480.79999999999995" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m10" edge="1" parent="1" style="endArrow=block;html=1;entryX=0.498;entryY=0.588;entryDx=0;entryDy=0;entryPerimeter=0;" value="10. Zadatak za bar (piće)">
+          <mxGeometry relative="1" x="-0.0116" y="10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="677.67" y="560" as="sourcePoint" />
+            <mxPoint x="1082.33" y="560.4000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m11" edge="1" parent="1" style="endArrow=open;dashed=1;html=1;entryX=0.5;entryY=0.749;entryDx=0;entryDy=0;entryPerimeter=0;" target="server" value="11. Porudžbina spremna">
+          <mxGeometry relative="1" y="-10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="880" y="640" as="sourcePoint" />
+            <mxPoint x="820" y="640" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m12" edge="1" parent="1" style="endArrow=open;dashed=1;html=1;entryX=0.506;entryY=0.85;entryDx=0;entryDy=0;entryPerimeter=0;" target="server" value="12. Porudžbina spremna">
+          <mxGeometry relative="1" y="-10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="1080" y="720" as="sourcePoint" />
+            <mxPoint x="820" y="720" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m13" edge="1" parent="1" style="endArrow=open;dashed=1;html=1;entryX=0.5;entryY=0.85;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.494;exitY=0.85;exitDx=0;exitDy=0;exitPerimeter=0;" value="13. Obaveštenje konobaru">
+          <mxGeometry relative="1" x="-0.0036" y="-10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="679.2800000000002" y="760" as="sourcePoint" />
+            <mxPoint x="480" y="760" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m14" edge="1" parent="1" style="endArrow=block;html=1;entryX=0.506;entryY=0.95;entryDx=0;entryDy=0;entryPerimeter=0;" target="gost" value="14. Dostava hrane/pića">
+          <mxGeometry relative="1" x="0.0546" y="-10" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="400" y="800" />
+            </Array>
+            <mxPoint x="480" y="800" as="sourcePoint" />
+            <mxPoint x="240" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m15" edge="1" parent="1" style="endArrow=block;html=1;entryX=0.5;entryY=0.963;entryDx=0;entryDy=0;entryPerimeter=0;" value="15. Obračun i uplata">
+          <mxGeometry relative="1" x="-0.0002" y="10" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="480" y="830" as="sourcePoint" />
+            <mxPoint x="680" y="830.4000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
