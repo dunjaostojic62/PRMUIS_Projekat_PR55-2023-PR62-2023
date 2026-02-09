@@ -64,36 +64,59 @@ namespace Client
 
             if (izbor == "4")
             {
-                    Console.WriteLine("KONOBAR – ZADATAK 7 (Rezervacije)");
-                    Console.WriteLine("--------------------------------");
+                Console.WriteLine("KONOBAR – ZADATAK 7 (Rezervacije)");
+                Console.WriteLine("--------------------------------");
 
-                    // 1) prijava uloge
-                    clientSocket.Send(Encoding.UTF8.GetBytes("ULOGA|KONOBAR\n"));
-                    string odgovor = PrimiLiniju(clientSocket);
-                    Console.WriteLine("SERVER: " + odgovor);
+                // 1) prijava uloge
+                clientSocket.Send(Encoding.UTF8.GetBytes("ULOGA|KONOBAR\n"));
+                string odgovor = PrimiLiniju(clientSocket);
+                Console.WriteLine("SERVER: " + odgovor);
 
-                    // 2) unos rezervacije (primer)
-                    Console.WriteLine("Saljem rezervaciju...");
-                    clientSocket.Send(Encoding.UTF8.GetBytes(
-                        "REZERVACIJA|2|19:30|4|1\n"));   // sto 2, 4 gosta, 1 minut
-                    odgovor = PrimiLiniju(clientSocket);
-                    Console.WriteLine("SERVER: " + odgovor);
+                Console.Write("Unesi broj stola za rezervaciju: ");
+                int sto1 = int.Parse(Console.ReadLine());
 
-                    // 3) zauzimanje stola
+                Console.Write("Unesi vreme dolaska (npr 19:30): ");
+                string vreme = Console.ReadLine();
+
+                Console.Write("Unesi broj gostiju: ");
+                int gosti = int.Parse(Console.ReadLine());
+
+                Console.Write("Unesi trajanje rezervacije u minutima: ");
+                int trajanje = int.Parse(Console.ReadLine());
+
+                Console.WriteLine("Saljem rezervaciju...");
+                clientSocket.Send(Encoding.UTF8.GetBytes($"REZERVACIJA|{sto1}|{vreme}|{gosti}|{trajanje}\n"));
+
+                odgovor = PrimiLiniju(clientSocket);
+                Console.WriteLine("SERVER: " + odgovor);
+
+
+                // 3) zauzimanje stola
+                Console.Write("Da li su gosti stigli i zauzimaju sto? (da/ne): ");
+                string stigli = Console.ReadLine().Trim().ToLower();
+
+                if (stigli == "da")
+                {
                     Console.WriteLine("Javljam da su gosti dosli...");
-                    clientSocket.Send(Encoding.UTF8.GetBytes("ZAUZMI|2\n"));
+                    clientSocket.Send(Encoding.UTF8.GetBytes($"ZAUZMI|{sto1}\n"));
                     odgovor = PrimiLiniju(clientSocket);
                     Console.WriteLine("SERVER: " + odgovor);
+                }
 
-                    // 4) trazenje statusa stolova
-                    Console.WriteLine("Trazim status stolova...");
+
+                // 4) trazenje statusa stolova
+                Console.WriteLine("Trazim status stolova...");
                     clientSocket.Send(Encoding.UTF8.GetBytes("STATUS?\n"));
                     odgovor = PrimiLiniju(clientSocket);
-                    Console.WriteLine("SERVER STATUS: " + odgovor);
+                Console.WriteLine("SERVER STATUS:");
 
-                    Console.WriteLine("\nZadatak 7 demonstriran.");
-                    Console.WriteLine("Pritisni taster za izlaz...");
-                    Console.ReadKey();
+                string status = odgovor.Replace("STO|", "")
+                                        .Replace(";", "\n");
+
+                Console.WriteLine(status);
+              
+                Console.WriteLine("Pritisni taster za izlaz...");
+                Console.ReadKey();
                 return;
             }
 
@@ -135,26 +158,6 @@ namespace Client
                     Console.WriteLine("Poslata porudzbina.");
                 }
 
-                /*Console.WriteLine("Cekam poruke DOSTAVA od servera...");
-
-                int brojDostava = 0;
-                while (brojDostava < 5)
-                {
-                    byte[] buf = new byte[BUFFER_SIZE];
-                    int br = clientSocket.Receive(buf);
-                    if (br == 0) break;
-
-                    string msg = Encoding.UTF8.GetString(buf, 0, br);
-                    Console.WriteLine("SERVER: " + msg);
-
-                    if (msg.StartsWith("DOSTAVA|"))
-                        brojDostava++;
-                }
-
-                Console.WriteLine("Stigle su sve dostave (5). Zatvaram konobara.");
-
-                clientSocket.Close();
-                return;*/
 
                 Console.WriteLine("Cekam poruke DOSTAVA od servera...");
 
@@ -186,16 +189,21 @@ namespace Client
                     }
                 }
 
-                Console.WriteLine("Stigle su sve dostave (5).");
-
+                
                 Console.WriteLine("Saljem zahtev za racun...");
                 clientSocket.Send(Encoding.UTF8.GetBytes("RACUN|" + brojStolaZ5 + "\n"));
 
-                 string odgovor = PrimiLiniju(clientSocket);
-                 Console.WriteLine("SERVER: " + odgovor);
+                string odgovor;
+                while ((odgovor = PrimiLiniju(clientSocket)) != null)
+                {
+                    Console.WriteLine("SERVER: " + odgovor);
+                    if (odgovor.StartsWith("RACUN_OK|"))
+                        break;
+                }
 
-                 clientSocket.Close();
-                 return;
+                clientSocket.Close();
+                return;
+
 
             }
 
@@ -276,13 +284,15 @@ namespace Client
 
             Console.WriteLine("Unesi 1 za obracun racuna:");
             string obracun = Console.ReadLine().Trim();
+           
 
             if (obracun == "1")
             {
-                clientSocket.Send(Encoding.UTF8.GetBytes(obracun));
+                clientSocket.Send(Encoding.UTF8.GetBytes("1\n"));
                 Console.WriteLine("Zahtev za obracun racuna je poslat serveru.");
             }
-            
+
+
 
             // Primamo racun od servera (kao tekst)
             byte[] racunBuffer = new byte[BUFFER_SIZE];

@@ -2,6 +2,8 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Collections.Generic;
+
 
 namespace Barmen
 {
@@ -24,8 +26,10 @@ namespace Barmen
 
             while (true)
             {
-                br = s.Receive(buffer);
-                string poruka = Encoding.UTF8.GetString(buffer, 0, br);
+                
+                string poruka = PrimiLiniju(s);
+                if (poruka == null) break;
+
 
                 string[] d = poruka.Split('|');
                 if (d.Length >= 6 && d[0] == "DODELA")
@@ -45,5 +49,29 @@ namespace Barmen
 
             }
         }
+        
+        private static string PrimiLiniju(Socket s)
+        {
+            try
+            {
+                List<byte> bytes = new List<byte>();
+                byte[] b = new byte[1];
+
+                while (true)
+                {
+                    int r = s.Receive(b, 0, 1, SocketFlags.None);
+                    if (r == 0) return null;
+                    if (b[0] == (byte)'\n') break;
+                    bytes.Add(b[0]);
+                }
+
+                return Encoding.UTF8.GetString(bytes.ToArray()).Trim();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
     }
 }

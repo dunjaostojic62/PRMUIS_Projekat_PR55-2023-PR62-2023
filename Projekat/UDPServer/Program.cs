@@ -40,7 +40,6 @@ namespace Server
             public int TrajanjeMin;      
         }
         private static Dictionary<int, Rezervacija> rezervacije = new Dictionary<int, Rezervacija>();
-        // stolovi vec imas kao stanjeStolova listu stringova – ali je bolje da za zadatak 7 imas mapu statusa:
         private static Dictionary<int, StatusEnum> statusStolova = new Dictionary<int, StatusEnum>();
 
         static void Main(string[] args)
@@ -108,7 +107,7 @@ namespace Server
             byte[] buffer = new byte[BUFFER_SIZE];
             int bytesReceivedTcp = acceptedSocket.Receive(buffer);
 
-            // uzimamo tacno primljene bajtove (da ne smeta ostatak bafera)
+            // Uzimamo tacno primljene bajtove (da ne smeta ostatak bafera)
             byte[] tacniBajtovi = new byte[bytesReceivedTcp];
             Array.Copy(buffer, tacniBajtovi, bytesReceivedTcp);
 
@@ -130,7 +129,7 @@ namespace Server
             // ZADATAK 2 
             stanjeStolova.Add(primljeniSto.BrojStola + "|" + primljeniSto.BrojGostiju);
 
-            // prikaz da se vidi da "cuva stanje"
+            // Prikaz da se vidi da "cuva stanje"
             Console.WriteLine("Stanje stolova (server pamti):");
             for (int i = 0; i < stanjeStolova.Count; i++)
             {
@@ -173,11 +172,13 @@ namespace Server
                 br_porudzbina++;
             }
 
-            //cekanje i primanje signala 
+            // Cekanje signala za obracun racuna
             int signal = -1;
-            byte[] bff = new byte[10];
-            acceptedSocket.Receive(bff);
-            signal = int.Parse(Encoding.UTF8.GetString(bff));
+
+            string linijaSignala = PrimiLiniju(acceptedSocket);
+            if (linijaSignala == null) return;
+
+            signal = int.Parse(linijaSignala);
             if (signal == 1)
             {
                 // Racunanje ukupnog iznosa
@@ -212,8 +213,6 @@ namespace Server
 
 
                 acceptedSocket.Shutdown(SocketShutdown.Both);
-               // acceptedSocket.Close();
-                //serverSocket.Close();
 
                 Console.ReadKey();
             }
@@ -279,7 +278,7 @@ namespace Server
                         string sto = d[1];
 
                         double ukupno = 0;
-                        string tekst = "RACUN ZA STO " + sto + "\n";
+                        string tekst = "RACUN ZA STO " + sto + "|";
 
                         lock (bravaZadatak5)
                         {
@@ -296,7 +295,7 @@ namespace Server
                                     double.TryParse(cenaS, out cena);
 
                                     ukupno += cena;
-                                    tekst += "- " + naziv + " = " + cena + "\n";
+                                    tekst += "- " + naziv + " = " + cena + "|";
                                 }
                             }
                         }
@@ -310,12 +309,12 @@ namespace Server
             }
 
             Console.WriteLine("Konobar se diskonektovao. Gasim zadatak 5.");
-            //try { serverSocket.Close(); } catch { }
+   
         }
 
         private static void DodeliUlogu(Socket s, string poruka)
         {
-            // ocekujemo: ULOGA|KONOBAR / ULOGA|KUVAR / ULOGA|BARMEN
+            // ULOGA|KONOBAR / ULOGA|KUVAR / ULOGA|BARMEN
             if (string.IsNullOrWhiteSpace(poruka)) return;
 
             string[] d = poruka.Split('|');
@@ -452,22 +451,7 @@ namespace Server
             s.Send(data);
         }
 
-        /* private static string PrimiString(Socket s)
-         {
-             try
-             {
-                 byte[] buffer = new byte[2048];
-                 int bytes = s.Receive(buffer);
-                 if (bytes == 0) return null;
-                 return Encoding.UTF8.GetString(buffer, 0, bytes);
-             }
-             catch
-             {
-                 return null;
-             }
-         }
-        */
-
+ 
         private static string PrimiLiniju(Socket s)
         {
             try
@@ -505,7 +489,7 @@ namespace Server
             foreach (var kv in rezervacije)
             {
                 Rezervacija r = kv.Value;
-                // Rezervacija vazi TrajanjeMin od trenutka kreiranja (po tvom ranijem modelu)
+                // Rezervacija vazi TrajanjeMin od trenutka kreiranja
                 DateTime istek = r.Kreirana.AddMinutes(r.TrajanjeMin);
                 if (DateTime.Now > istek)
                     zaBrisanje.Add(kv.Key);
@@ -543,7 +527,7 @@ namespace Server
             Console.WriteLine($"- Kuvar:  {(kuvarSlobodan ? "SLOBODAN" : "ZAUZET")}");
             Console.WriteLine($"- Barmen: {(barmenSlobodan ? "SLOBODAN" : "ZAUZET")}");
             Console.WriteLine("\nAktivne porudzbine (ako koristis listuPorudzbina/red/ste k iz zad.5):");
-            // ako vec imas listaPorudzbina / redPorudzbina itd. – ispiši bar count
+           
             Console.WriteLine($"- Red: {redPorudzbina.Count}, Stek: {stekPorudzbina.Count}");
         }
 
@@ -597,7 +581,7 @@ namespace Server
         {
             if (poruka.StartsWith("ULOGA|"))
             {
-                DodeliUlogu(s, poruka); // vec imas ovu logiku u zadatku 5
+                DodeliUlogu(s, poruka); 
                 return;
             }
 

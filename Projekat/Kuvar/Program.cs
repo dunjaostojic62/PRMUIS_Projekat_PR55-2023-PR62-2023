@@ -2,6 +2,9 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Collections.Generic;
+using System.IO;
+
 
 namespace Kuvar
 {
@@ -16,7 +19,6 @@ namespace Kuvar
             s.Connect(new IPEndPoint(IPAddress.Parse(SERVER_IP), SERVER_PORT));
             Console.WriteLine("KUVAR povezan.");
 
-            // prijava uloge
             s.Send(Encoding.UTF8.GetBytes("ULOGA|KUVAR\n"));
 
             byte[] buffer = new byte[2048];
@@ -25,8 +27,9 @@ namespace Kuvar
 
             while (true)
             {
-                br = s.Receive(buffer);
-                string poruka = Encoding.UTF8.GetString(buffer, 0, br);
+                
+                string poruka = PrimiLiniju(s);
+                if (poruka == null) break;
 
                 // DODELA|id|sto|kategorija|naziv|cena
                 string[] d = poruka.Split('|');
@@ -46,5 +49,28 @@ namespace Kuvar
                 }
             }
         }
+        private static string PrimiLiniju(Socket s)
+        {
+            try
+            {
+                List<byte> bytes = new List<byte>();
+                byte[] b = new byte[1];
+
+                while (true)
+                {
+                    int r = s.Receive(b, 0, 1, SocketFlags.None);
+                    if (r == 0) return null;
+                    if (b[0] == (byte)'\n') break;
+                    bytes.Add(b[0]);
+                }
+
+                return Encoding.UTF8.GetString(bytes.ToArray()).Trim();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
     }
 }
